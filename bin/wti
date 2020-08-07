@@ -6,7 +6,7 @@ require 'optimist'
 require 'web_translate_it'
 
 show_commands = <<-EOS
-Usage: wti <command> [options]+ <filename>
+Usage: wti <command> --project <project> [options]+ <filename>
 
 The most commonly used wti commands are:
    pull        Pull target language file(s)
@@ -21,6 +21,12 @@ The most commonly used wti commands are:
    init        Configure your project to sync
 
 See `wti <command> --help` for more information on a specific command.
+
+Project should be configured in your .wti file as:
+test_project:
+  api_key: xxxxx
+You can also provide default project for pull command as:
+api_key: xxxxx
 
 [options] are:
 EOS
@@ -40,6 +46,7 @@ command_options = case command
 wti pull [filename] - Pull target language file(s)
 [options] are:
 EOS
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :locale, "ISO code of locale(s) to pull", type: :string
       opt :all,    "Pull all files"
       opt :force,  "Force pull (bypass conditional requests to WTI)"
@@ -52,6 +59,7 @@ EOS
 wti push [filename] - Push master language file(s)
 [options] are:
 EOS
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :locale, "ISO code of locale(s) to push", type: :string
       opt :target, "Upload all target files"
       opt :force,  "Force push (bypass conditional requests to WTI)"
@@ -67,6 +75,7 @@ EOS
   when "add"
     Optimist::options do
       banner "wti add filename - Create and push a new master language file"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :low_priority, "WTI will process this file with a low priority"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
@@ -74,36 +83,42 @@ EOS
   when "rm"
     Optimist::options do
       banner "wti rm filename - Delete a master language file"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
     end
   when "mv"
     Optimist::options do
       banner "wti mv filename - Moves a master language file and its target files"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug, "Display debug information"
     end
   when "addlocale"
     Optimist::options do
       banner "wti addlocale localename - Add a new locale to the project"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
     end
   when "rmlocale"
     Optimist::options do
       banner "wti rmlocale localename Delete a locale from the project"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
     end
   when "status"
     Optimist::options do
       banner "wti status - Fetch and display project statistics"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
     end
   when "init"
     Optimist::options do
       banner "wti init [api_token] - Configure your project to sync"
+      opt :project, "Project name configured in your wti file", :type => :string, :short => "-p"
       opt :config, "Path to a configuration file", short: "-c", default: ".wti"
       opt :debug,  "Display debug information"
     end
@@ -121,6 +136,11 @@ EOS
       Optimist::die "Unknown subcommand #{command.inspect}"
     end
   end
+
+if command_options[:project].nil? && command != "pull"
+  puts StringUtil.failure("\nPlease provide project name!")
+  exit 1
+end
 
 begin
   WebTranslateIt::Connection.turn_debug_on if command_options.debug

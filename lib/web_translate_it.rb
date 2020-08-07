@@ -17,8 +17,8 @@ require 'web_translate_it/project'
 
 module WebTranslateIt
 
-  def self.fetch_translations
-    config = Configuration.new
+  def self.fetch_translations(project = nil)
+    config = project.nil? ? Configuration.new : Configuration.new(Rails.root ,".wti", project)
     locale = I18n.locale.to_s
     return if config.ignore_locales.include?(locale)
     config.logger.debug { "   Fetching #{locale} language file(s) from WebTranslateIt" } if config.logger
